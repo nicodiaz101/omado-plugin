@@ -88,11 +88,23 @@ BarWidget {
       }
   }
 
+  onOpenedChanged: {
+      if (opened) {
+          dbusProcCount.running = true;
+          dbusProcTasks.running = true;
+      }
+  }
+
   Timer {
-      interval: 30000
-      running: !root.daemonAvailable
+      interval: 3000
+      running: true
       repeat: true
-      onTriggered: dbusProcCount.running = true
+      onTriggered: {
+          dbusProcCount.running = true;
+          if (root.opened) {
+              dbusProcTasks.running = true;
+          }
+      }
   }
   
   function injectPanel() {
@@ -127,7 +139,8 @@ BarWidget {
     verticalPadding: 8
     
     onPressed: function(mouse) {
-        if (root.daemonAvailable && panelLoader.item) {
+        if (panelLoader.item) {
+            dbusProcCount.running = true;
             panelLoader.item.toggle();
             if (panelLoader.item.opened) {
                 dbusProcTasks.running = true;
