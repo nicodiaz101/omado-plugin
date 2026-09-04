@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "omado.panel",
+  "name": "OmaDo Tasks",
+  "version": "1.0.0",
+  "author": "omacom-io",
+  "license": "MIT",
+  "description": "Tareas del día de OmaDo en la barra superior de Omarchy.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "OmaDo Tasks",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "center"
+  },
+  "settings": {
+    "position": {
+      "type": "enum",
+      "values": ["left", "center", "center"],
+      "default": "center",
+      "label": "Posición en la barra"
+    }
+  }
+}

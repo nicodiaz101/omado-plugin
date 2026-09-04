@@ -1,0 +1,9 @@
+# Cache & temporary files
+.cache/
+*.swp
+*~
+.DS_Store
+
+# QML cache
+*.qmlc
+*.jsc
