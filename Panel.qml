@@ -80,7 +80,7 @@ Panel {
 
 
           PanelSectionHeader {
-              text: "PENDIENTES"
+              text: "PENDING TASKS"
               foreground: root.foregroundColor
               fontFamily: root.fontFamily
               visible: root.tasks.length > 0
@@ -88,7 +88,7 @@ Panel {
 
           Text {
               visible: root.tasks.length === 0
-              text: "No hay tareas pendientes. ¡Todo al día!"
+              text: "No pending tasks. All caught up!"
               color: Qt.rgba(theme.foreground.r, theme.foreground.g, theme.foreground.b, 0.5)
               font.pixelSize: 13
               font.family: root.fontFamily
@@ -181,7 +181,7 @@ Panel {
                       anchors.right: countdownText.visible ? countdownText.left : parent.right
                       anchors.rightMargin: 15
                       anchors.verticalCenter: parent.verticalCenter
-                      text: modelData.title !== undefined ? modelData.title : "Tarea inválida"
+                      text: modelData.title !== undefined ? modelData.title : "Invalid task"
                       color: modelData.isCompleted ? theme.border : root.foregroundColor
                       font.strikeout: modelData.isCompleted
                       font.pixelSize: 13
@@ -206,7 +206,7 @@ Panel {
           // Footer
           Button {
               width: parent.width
-              text: "Abrir OmaDo"
+              text: "Open OmaDo"
               foreground: root.foregroundColor
               onClicked: {
                   root.close();

@@ -4,8 +4,8 @@
   "name": "OmaDo Tasks",
   "version": "1.0.0",
   "author": "omacom-io",
-  "license": "MIT",
-  "description": "Tareas del día de OmaDo en la barra superior de Omarchy.",
+  "license": "GPL-3.0-or-later",
+  "description": "OmaDo My Day tasks in the Omarchy top bar.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"
@@ -19,9 +19,9 @@
   "settings": {
     "position": {
       "type": "enum",
-      "values": ["left", "center", "center"],
+      "values": ["left", "center", "right"],
       "default": "center",
-      "label": "Posición en la barra"
+      "label": "Bar position"
     }
   }
 }

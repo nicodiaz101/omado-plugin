@@ -102,7 +102,7 @@ BarWidget {
       if ("settings" in target) target.settings = root.settings
       if ("anchorItem" in target) target.anchorItem = button
       if ("hostWidget" in target) target.hostWidget = root
-      target.tasks = Model.todayTasks
+      target.tasks = Model.getVisibleTasks()
   }
 
   Loader {
@@ -120,7 +120,7 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.daemonAvailable ? (root.pendingCount > 0 ? "\u2713 " + root.pendingCount : "\u2713 Sin tareas") : "\u2014"
+    text: root.daemonAvailable ? (root.pendingCount > 0 ? "\u2713 " + root.pendingCount : "\u2713 No tasks") : "\u2014"
     labelVisible: true
     hasVisualContent: true
     horizontalMargin: 10

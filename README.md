@@ -1,68 +1,68 @@
 # OmaDo Panel Widget
 
-Bar-widget oficial de **OmaDo** para el entorno de escritorio **Omarchy** (Quattro / Quickshell).
+Official **OmaDo** bar-widget for the **Omarchy** desktop environment (Quattro / Quickshell).
 
-Muestra el estado de tus tareas del día ("Mi Día") directamente en la barra superior del sistema, con integración reactiva en tiempo real vía D-Bus con el daemon de OmaDo.
-
----
-
-## Características
-
-- **Thin Client Nativo**: 100% QML y JavaScript sin dependencias compiladas.
-- **D-Bus Reactivo**: Se comunica con `io.omarchy.OmaDo` y escucha señales en tiempo real (`TodayTasksChanged`, `TasksChanged`).
-- **Diseño Omarchy Quattro**: Utiliza componentes nativos del sistema (`PanelHero`, `PopupCard`, `PanelSectionHeader`) adaptándose a la paleta y tipografía del tema activo.
-- **Acciones Rápidas**:
-  - Visualización del conteo de tareas pendientes en la barra.
-  - Marcar tareas como completadas directamente desde el panel.
-  - Período de gracia visual con cuenta regresiva de 10s al completar una tarea.
-  - Acceso directo para abrir la aplicación completa OmaDo.
+Displays your daily tasks ("My Day") directly in the system's top bar, featuring real-time reactive D-Bus integration with the OmaDo daemon.
 
 ---
 
-## Requisitos
+## Features
 
-- [Omarchy](https://github.com/omacom/omarchy) con shell Quattro.
-- [OmaDo](https://github.com/nicodiaz101/omado) v1.0 o superior con el servicio de daemon activo.
+- **Native Thin Client**: 100% QML and JavaScript with zero compilation requirements.
+- **Reactive D-Bus**: Communicates with `io.omarchy.OmaDo` and listens to real-time broadcast signals (`TodayTasksChanged`, `TasksChanged`).
+- **Omarchy Quattro Design**: Implements native system components (`PanelHero`, `PopupCard`, `PanelSectionHeader`), adhering to the active theme palette and typography.
+- **Quick Actions**:
+  - Live pending tasks counter directly in the top bar.
+  - Complete tasks with a single click from the dropdown panel.
+  - 10-second visual grace period countdown when completing tasks inside the panel.
+  - Direct shortcut to launch the full OmaDo application.
 
 ---
 
-## Instalación
+## Requirements
 
-1. Clona este repositorio o copia la carpeta dentro del directorio de plugins de Omarchy:
+- [Omarchy](https://github.com/omacom/omarchy) running the Quattro shell.
+- [OmaDo](https://github.com/nicodiaz101/omado) v1.0 or later with its background daemon running.
+
+---
+
+## Installation
+
+1. Clone this repository or copy the directory into Omarchy's plugin path:
    ```bash
    mkdir -p ~/.config/omarchy/plugins/omado.panel
    cp -r * ~/.config/omarchy/plugins/omado.panel/
    ```
 
-2. Añade el widget a tu layout en `~/.config/omarchy/shell.json` (por ejemplo, en la sección `center` o `right`):
+2. Add the widget to your bar layout in `~/.config/omarchy/shell.json` (e.g., inside the `center` or `right` array):
    ```json
    {
      "id": "omado.panel"
    }
    ```
 
-3. Recarga la barra superior:
+3. Reload the Omarchy top bar:
    ```bash
    omarchy-restart-shell
    ```
 
 ---
 
-## Estructura del Proyecto
+## Project Structure
 
 ```text
-├── manifest.json       # Contrato de integración del plugin con Omarchy Quattro
-├── BarWidget.qml       # Presentación en la barra superior y monitor de señales D-Bus
-├── Panel.qml           # Panel flotante desplegable con la lista de tareas
-├── Model.js            # Estado local, llamadas a D-Bus y lógica de visibilidad
-├── Theme.qml           # Mapeo de colores y estilos
-├── SPECS.md            # Especificaciones técnicas completas
-├── AGENTS.md           # Reglas del sistema y lineamientos de desarrollo
-└── ROADMAP.md          # Plan de desarrollo e hitos
+├── manifest.json       # Omarchy Quattro plugin contract
+├── BarWidget.qml       # Top bar entry widget and reactive D-Bus monitor
+├── Panel.qml           # Dropdown floating panel displaying tasks list
+├── Model.js            # Local state management, D-Bus calls, and task visibility filters
+├── Theme.qml           # Theme color and style mapping
+├── SPECS.md            # Technical specifications
+├── AGENTS.md           # System rules and development guidelines
+└── ROADMAP.md          # Development roadmap and milestones
 ```
 
 ---
 
-## Licencia
+## License
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+This project is licensed under the GNU General Public License v3.0 (GPLv3). See the [LICENSE](LICENSE) file for details.
