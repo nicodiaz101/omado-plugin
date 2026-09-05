@@ -1,6 +1,6 @@
-# OmaDo Tasks — Omarchy Shell Plugin
+# OmaDo-plugin
 
-> Official bar-widget plugin for the **Omarchy Quattro** desktop shell, integrating seamlessly with the **OmaDo** task daemon via D-Bus.
+> Official bar-widget plugin for the **Omarchy** desktop shell, integrating seamlessly with the **OmaDo** task daemon via D-Bus.
 
 Displays your daily tasks ("My Day") directly in your top status bar with instant reactive updates, inline completion, reminder badges, and fast access to OmaDo.
 
@@ -29,9 +29,9 @@ Displays your daily tasks ("My Day") directly in your top status bar with instan
 
 ## Requirements
 
-1. **[Omarchy](https://github.com/omacom/omarchy)** running the Quattro shell (`omarchy-shell`).
-2. **[OmaDo](https://github.com/nicodiaz101/omado) (v1.0+)**: The core application and daemon must be installed.
-   - The OmaDo background daemon must be active so the plugin can communicate over D-Bus:
+1. **[Omarchy]**
+2. **[OmaDo](https://github.com/nicodiaz101/omado) (v1.1+)**: The core application and daemon must be installed.
+   - The OmaDo background daemon must be active so the plugin can communicate over D-Bus. If for some reason the installer of OmaDo do not add the autostart, you can add it by yourself:
      ```bash
      # Enable and start the OmaDo daemon user service
      systemctl --user enable --now omado.service
@@ -45,21 +45,12 @@ Displays your daily tasks ("My Day") directly in your top status bar with instan
 
 ## Installation
 
-### The Easy Way (Native Omarchy CLI)
-
-Omarchy Quattro includes a built-in plugin manager. You can install and enable the widget with a single command:
-
 ```bash
 omarchy plugin add https://github.com/nicodiaz101/omado-plugin.git --enable
 ```
 *(Alias: `omarchy plugin install https://github.com/nicodiaz101/omado-plugin.git --enable`)*
 
 When prompted, select where to place the widget on your bar (`left`, `center`, or `right` — default is `center`).
-
-To install non-interactively (e.g. in setup scripts or dotfiles):
-```bash
-omarchy plugin add https://github.com/nicodiaz101/omado-plugin.git --enable --yes
-```
 
 ---
 
