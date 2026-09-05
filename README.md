@@ -29,7 +29,7 @@ Displays your daily tasks ("My Day") directly in your top status bar with instan
 
 ## Requirements
 
-1. **[Omarchy]**
+1. **Omarchy**
 2. **[OmaDo](https://github.com/nicodiaz101/omado) (v1.1+)**: The core application and daemon must be installed.
    - The OmaDo background daemon must be active so the plugin can communicate over D-Bus. If for some reason the installer of OmaDo do not add the autostart, you can add it by yourself:
      ```bash
