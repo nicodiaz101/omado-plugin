@@ -27,30 +27,8 @@ BarWidget {
 
   Component.onCompleted: {
       Model.init(root);
-      dbusProcCount.running = true;
+      dbusProcTasks.running = true;
       dbusMonitor.running = true;
-  }
-
-  Process {
-      id: dbusProcCount
-      command: ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "GetTotalPendingCount"]
-      stdout: StdioCollector { id: countStdout; waitForEnd: true }
-      onExited: function(exitCode) {
-          if (exitCode === 0) {
-              try {
-                  var res = JSON.parse(countStdout.text);
-                  Model.pendingCount = res.data[0];
-                  Model.daemonAvailable = true;
-              } catch(e) {
-                  Model.daemonAvailable = false;
-                  Model.pendingCount = 0;
-              }
-          } else {
-              Model.daemonAvailable = false;
-              Model.pendingCount = 0;
-          }
-          root.updateState();
-      }
   }
 
   Process {
@@ -61,12 +39,17 @@ BarWidget {
           if (exitCode === 0) {
               try {
                   var res = JSON.parse(tasksStdout.text);
-                  // Since GetTasksForToday now returns a JSON string in D-Bus (signature 's')
-                  // res.data[0] is that string. We need to parse it to get the tasks array.
                   Model.todayTasks = JSON.parse(res.data[0]);
+                  Model.daemonAvailable = true;
+                  Model.pendingCount = Model.getPendingTodayCount();
                   root.updateState();
               } catch(e) {
+                  Model.daemonAvailable = false;
+                  root.updateState();
               }
+          } else {
+              Model.daemonAvailable = false;
+              root.updateState();
           }
       }
   }
@@ -79,10 +62,7 @@ BarWidget {
           onRead: function(data) {
               var line = String(data);
               if (line.indexOf("TodayTasksChanged") !== -1 || line.indexOf("TasksChanged") !== -1) {
-                  dbusProcCount.running = true;
-                  if (panelLoader.item && panelLoader.item.opened) {
-                      dbusProcTasks.running = true;
-                  }
+                  dbusProcTasks.running = true;
               }
           }
       }
@@ -90,7 +70,6 @@ BarWidget {
 
   onOpenedChanged: {
       if (opened) {
-          dbusProcCount.running = true;
           dbusProcTasks.running = true;
       }
   }
@@ -100,10 +79,7 @@ BarWidget {
       running: true
       repeat: true
       onTriggered: {
-          dbusProcCount.running = true;
-          if (root.opened) {
-              dbusProcTasks.running = true;
-          }
+          dbusProcTasks.running = true;
       }
   }
   
@@ -140,11 +116,8 @@ BarWidget {
     
     onPressed: function(mouse) {
         if (panelLoader.item) {
-            dbusProcCount.running = true;
+            dbusProcTasks.running = true;
             panelLoader.item.toggle();
-            if (panelLoader.item.opened) {
-                dbusProcTasks.running = true;
-            }
         }
     }
   }

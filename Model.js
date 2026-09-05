@@ -30,7 +30,22 @@ function toggleTask(taskId, currentCompleted) {
             delete recentlyCompleted[taskId];
         }
     }
+    for (var i = 0; i < todayTasks.length; i++) {
+        if (todayTasks[i].id === taskId) {
+            todayTasks[i].isCompleted = newState;
+            break;
+        }
+    }
+    pendingCount = getPendingTodayCount();
     host.updateState();
+}
+
+function getPendingTodayCount() {
+    var count = 0;
+    for (var i = 0; i < todayTasks.length; i++) {
+        if (!todayTasks[i].isCompleted) count++;
+    }
+    return count;
 }
 
 function isTaskVisible(task) {
@@ -51,4 +66,36 @@ function removeRecentlyCompleted(taskId) {
         delete recentlyCompleted[taskId];
         host.updateState();
     }
+}
+
+function deleteTask(taskId, callback) {
+    var proc = Qt.createQmlObject('import QtQuick; import Quickshell.Io; Process { }', host, "dbusProcDelete");
+    proc.command = ["busctl", "--user", "call", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "DeleteTask", "s", taskId];
+    proc.exited.connect(function() {
+        if (proc.exitCode === 0) {
+            todayTasks = todayTasks.filter(function(t) { return t.id !== taskId; });
+            if (recentlyCompleted.hasOwnProperty(taskId)) {
+                delete recentlyCompleted[taskId];
+            }
+            pendingCount = getPendingTodayCount();
+            if (callback) callback(true);
+        } else {
+            if (callback) callback(false);
+        }
+        host.updateState();
+        proc.destroy();
+    });
+    proc.running = true;
+}
+
+function getReminderTime(reminderAt) {
+    if (!reminderAt || typeof reminderAt !== "string") return "";
+    var parts = reminderAt.split(/[T ]/);
+    if (parts.length > 1) {
+        var timeParts = parts[1].split(':');
+        if (timeParts.length >= 2) {
+            return timeParts[0] + ":" + timeParts[1];
+        }
+    }
+    return "";
 }

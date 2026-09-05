@@ -3,7 +3,7 @@
   "id": "omado.panel",
   "name": "OmaDo Tasks",
   "version": "1.0.0",
-  "author": "omacom-io",
+  "author": "Nicolas Diaz",
   "license": "GPL-3.0-or-later",
   "description": "OmaDo My Day tasks in the Omarchy top bar.",
   "kinds": ["bar-widget"],
