@@ -7,3 +7,9 @@
 # QML cache
 *.qmlc
 *.jsc
+
+# Local developer & agent instructions
+AGENTS.md
+ROADMAP.md
+SPECS.md
+
