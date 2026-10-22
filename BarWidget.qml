@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Ui
-import qs.Commons
+import qs.Commons as Commons
 import "Model.js" as Model
 
 BarWidget {
@@ -17,17 +17,28 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
+  Commons.Translations {
+      id: strings
+      directory: Qt.resolvedUrl("i18n")
+  }
+
   function updateState() {
       daemonAvailable = Model.daemonAvailable;
       pendingCount = Model.pendingCount;
       if (panelLoader.item) {
           panelLoader.item.tasks = Model.getVisibleTasks();
+          panelLoader.item.overdueTasks = Model.overdueTasks;
       }
+  }
+
+  function refreshTasks() {
+      dbusProcTasks.running = true;
+      dbusProcOverdue.running = true;
   }
 
   Component.onCompleted: {
       Model.init(root);
-      dbusProcTasks.running = true;
+      root.refreshTasks();
       dbusMonitor.running = true;
   }
 
@@ -55,6 +66,23 @@ BarWidget {
   }
 
   Process {
+      id: dbusProcOverdue
+      command: ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "GetOverdueTasks"]
+      stdout: StdioCollector { id: overdueStdout; waitForEnd: true }
+      onExited: function(exitCode) {
+          if (exitCode === 0) {
+              try {
+                  var res = JSON.parse(overdueStdout.text);
+                  Model.overdueTasks = JSON.parse(res.data[0]);
+                  root.updateState();
+              } catch(e) {
+                  Model.overdueTasks = [];
+              }
+          }
+      }
+  }
+
+  Process {
       id: dbusMonitor
       command: ["busctl", "--user", "monitor", "io.omarchy.OmaDo"]
       running: true
@@ -62,7 +90,7 @@ BarWidget {
           onRead: function(data) {
               var line = String(data);
               if (line.indexOf("TodayTasksChanged") !== -1 || line.indexOf("TasksChanged") !== -1) {
-                  dbusProcTasks.running = true;
+                  root.refreshTasks();
               }
           }
       }
@@ -70,7 +98,7 @@ BarWidget {
 
   onOpenedChanged: {
       if (opened) {
-          dbusProcTasks.running = true;
+          root.refreshTasks();
       }
   }
 
@@ -79,7 +107,7 @@ BarWidget {
       running: true
       repeat: true
       onTriggered: {
-          dbusProcTasks.running = true;
+          root.refreshTasks();
       }
   }
   
@@ -91,6 +119,7 @@ BarWidget {
       if ("anchorItem" in target) target.anchorItem = button
       if ("hostWidget" in target) target.hostWidget = root
       target.tasks = Model.getVisibleTasks()
+      target.overdueTasks = Model.overdueTasks
   }
 
   Loader {
@@ -108,7 +137,7 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.daemonAvailable ? (root.pendingCount > 0 ? "\u2713 " + root.pendingCount : "\u2713 No tasks") : "\u2014"
+    text: root.daemonAvailable ? (root.pendingCount > 0 ? "\u2713 " + root.pendingCount : strings.t("bar.no_tasks", "\u2713 No tasks")) : "\u2014"
     labelVisible: true
     hasVisualContent: true
     horizontalMargin: 10
@@ -116,7 +145,7 @@ BarWidget {
     
     onPressed: function(mouse) {
         if (panelLoader.item) {
-            dbusProcTasks.running = true;
+            root.refreshTasks();
             panelLoader.item.toggle();
         }
     }

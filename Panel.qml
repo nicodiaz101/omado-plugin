@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -13,6 +13,12 @@ Panel {
   property var hostWidget: null
 
   property var tasks: []
+  property var overdueTasks: []
+
+  Commons.Translations {
+      id: strings
+      directory: Qt.resolvedUrl("i18n")
+  }
 
   QtObject {
       id: theme
@@ -26,6 +32,24 @@ Panel {
 
   readonly property color foregroundColor: bar ? bar.foreground : theme.foreground
   readonly property string fontFamily: bar ? bar.fontFamily : "sans-serif"
+
+  function submitNewTask() {
+      var txt = newTaskInput.text.trim();
+      if (txt.length === 0) return;
+      Model.createTask(txt, true, function(success, taskId) {
+          if (success) {
+              newTaskInput.text = "";
+          }
+      });
+  }
+
+  onOpenedChanged: {
+      if (opened) {
+          if (root.hostWidget && root.hostWidget.refreshTasks) {
+              root.hostWidget.refreshTasks();
+          }
+      }
+  }
 
   Timer {
       interval: 1000
@@ -62,47 +86,204 @@ Panel {
           anchors.right: parent.right
           anchors.top: parent.top
           spacing: Style.space(8)
-          
-          
+
           PanelHero {
-              title: "OmaDo"
-              meta: "TODAY TASKS"
+              title: strings.t("panel.title", "OmaDo")
+              meta: strings.t("panel.meta", "TODAY'S TASKS")
               foreground: root.foregroundColor
               fontFamily: root.fontFamily
               iconComponent: Component {
                   Text {
-                      text: "✓"
+                      text: "\u2713"
                       color: theme.accent
                       font.pixelSize: Style.font.display
                   }
               }
           }
 
+          // Quick Task Creation (Natural Language)
+          Row {
+              width: parent.width
+              spacing: 6
 
+              TextField {
+                  id: newTaskInput
+                  width: parent.width - 34
+                  placeholderText: strings.t("panel.add_task_placeholder", "Add a task for today...")
+                  foreground: root.foregroundColor
+                  font.family: root.fontFamily
+                  font.pixelSize: 12
+                  activeFocusOnTab: true
+                  selectByMouse: true
+
+                  onAccepted: root.submitNewTask()
+                  Keys.onEscapePressed: {
+                      if (text.length > 0) text = ""
+                      else root.close()
+                  }
+              }
+
+              Rectangle {
+                  id: addBtn
+                  width: 28
+                  height: newTaskInput.height
+                  radius: Style.cornerRadius
+                  color: addMouse.containsMouse ? theme.accent : Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.15)
+                  border.color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.4)
+                  border.width: 1
+
+                  Text {
+                      anchors.centerIn: parent
+                      text: "+"
+                      color: addMouse.containsMouse ? theme.background : theme.accent
+                      font.pixelSize: 16
+                      font.bold: true
+                      font.family: root.fontFamily
+                  }
+
+                  MouseArea {
+                      id: addMouse
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: root.submitNewTask()
+                  }
+              }
+          }
+
+          // Overdue Tasks Section (if any)
+          Column {
+              width: parent.width
+              spacing: Style.space(4)
+              visible: root.overdueTasks.length > 0
+
+              PanelSectionHeader {
+                  text: strings.t("panel.overdue_tasks", "OVERDUE TASKS") + " (" + root.overdueTasks.length + ")"
+                  foreground: theme.error
+                  fontFamily: root.fontFamily
+              }
+
+              ListView {
+                  id: overdueList
+                  width: parent.width
+                  height: Math.min(110, root.overdueTasks.length * 36)
+                  clip: true
+                  model: root.overdueTasks
+
+                  delegate: Item {
+                      width: overdueList.width
+                      height: 34
+
+                      Rectangle {
+                          anchors.fill: parent
+                          radius: Style.cornerRadius
+                          color: overdueMouse.containsMouse ? Qt.rgba(theme.error.r, theme.error.g, theme.error.b, 0.08) : "transparent"
+                      }
+
+                      MouseArea {
+                          id: overdueMouse
+                          anchors.fill: parent
+                          hoverEnabled: true
+                      }
+
+                      Text {
+                          id: overdueBullet
+                          text: "\u25CB"
+                          color: theme.error
+                          font.pixelSize: 12
+                          anchors.left: parent.left
+                          anchors.leftMargin: 15
+                          anchors.verticalCenter: parent.verticalCenter
+                      }
+
+                      Column {
+                          anchors.left: overdueBullet.right
+                          anchors.leftMargin: 10
+                          anchors.right: rescheduleBtn.left
+                          anchors.rightMargin: 8
+                          anchors.verticalCenter: parent.verticalCenter
+                          spacing: 1
+
+                          Text {
+                              width: parent.width
+                              text: modelData.title !== undefined ? modelData.title : ""
+                              color: root.foregroundColor
+                              font.pixelSize: 12
+                              font.family: root.fontFamily
+                              elide: Text.ElideRight
+                          }
+
+                          Text {
+                              text: Model.getFormattedDueDate(modelData.dueDate)
+                              color: theme.error
+                              font.pixelSize: 10
+                              font.family: root.fontFamily
+                              visible: text !== ""
+                          }
+                      }
+
+                      Rectangle {
+                          id: rescheduleBtn
+                          anchors.right: parent.right
+                          anchors.rightMargin: 12
+                          anchors.verticalCenter: parent.verticalCenter
+                          width: reschedText.implicitWidth + 12
+                          height: 22
+                          radius: Style.cornerRadius
+                          color: reschedMouse.containsMouse ? theme.accent : Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.15)
+                          border.color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.35)
+                          border.width: 1
+
+                          Text {
+                              id: reschedText
+                              anchors.centerIn: parent
+                              text: "+ " + strings.t("panel.add_to_my_day", "My Day")
+                              color: reschedMouse.containsMouse ? theme.background : theme.accent
+                              font.pixelSize: 10
+                              font.weight: Font.Medium
+                              font.family: root.fontFamily
+                          }
+
+                          MouseArea {
+                              id: reschedMouse
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: {
+                                  Model.rescheduleTask(modelData.id);
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+
+          // Today's Tasks Section Header
           PanelSectionHeader {
-              text: "PENDING TASKS"
+              text: strings.t("panel.pending_tasks", "PENDING TASKS")
               foreground: root.foregroundColor
               fontFamily: root.fontFamily
               visible: root.tasks.length > 0
           }
 
+          // Empty state text
           Text {
-              visible: root.tasks.length === 0
-              text: "No pending tasks. All caught up!"
+              visible: root.tasks.length === 0 && root.overdueTasks.length === 0
+              text: strings.t("panel.no_pending_tasks", "No pending tasks. All caught up!")
               color: Qt.rgba(theme.foreground.r, theme.foreground.g, theme.foreground.b, 0.5)
               font.pixelSize: 13
               font.family: root.fontFamily
               horizontalAlignment: Text.AlignHCenter
               width: parent.width
-              topPadding: 20
-              bottomPadding: 20
+              topPadding: 16
+              bottomPadding: 16
           }
 
           // Task List
           ListView {
               id: taskList
               width: parent.width
-              height: Math.max(0, Math.min(320, taskList.contentHeight > 0 ? taskList.contentHeight : root.tasks.length * 40))
+              height: Math.max(0, Math.min(280, taskList.contentHeight > 0 ? taskList.contentHeight : root.tasks.length * 40))
               clip: true
               model: root.tasks
               visible: root.tasks.length > 0
@@ -309,7 +490,7 @@ Panel {
                           anchors.right: confirmActions.left
                           anchors.rightMargin: 8
                           anchors.verticalCenter: parent.verticalCenter
-                          text: "Delete \"" + (modelData.title || "") + "\"?"
+                          text: strings.t("panel.delete_confirm", "Delete \"%1\"?").arg(modelData.title || "")
                           color: theme.error
                           font.pixelSize: 12
                           font.family: root.fontFamily
@@ -331,7 +512,7 @@ Panel {
 
                               Text {
                                   anchors.centerIn: parent
-                                  text: "Yes"
+                                  text: strings.t("panel.yes", "Yes")
                                   color: yesMouse.containsMouse ? theme.background : theme.error
                                   font.pixelSize: 11
                                   font.bold: true
@@ -359,7 +540,7 @@ Panel {
 
                               Text {
                                   anchors.centerIn: parent
-                                  text: "No"
+                                  text: strings.t("panel.no", "No")
                                   color: root.foregroundColor
                                   font.pixelSize: 11
                                   font.family: root.fontFamily
@@ -384,7 +565,7 @@ Panel {
           // Footer
           Button {
               width: parent.width
-              text: "Open OmaDo"
+              text: strings.t("panel.open_omado", "Open OmaDo")
               foreground: root.foregroundColor
               onClicked: {
                   root.close();

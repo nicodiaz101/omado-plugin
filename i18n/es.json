@@ -1,0 +1,19 @@
+{
+  "bar.no_tasks": "✓ Sin tareas",
+  "bar.tasks": {
+    "one": "✓ %1 tarea",
+    "other": "✓ %1 tareas"
+  },
+  "panel.title": "OmaDo",
+  "panel.meta": "TAREAS DE HOY",
+  "panel.add_task_placeholder": "Agregar tarea para hoy...",
+  "panel.pending_tasks": "TAREAS PENDIENTES",
+  "panel.no_pending_tasks": "No hay tareas pendientes. ¡Todo al día!",
+  "panel.overdue_tasks": "TAREAS VENCIDAS",
+  "panel.add_to_my_day": "Mi Día",
+  "panel.reschedule_tooltip": "Agregar a Mi Día",
+  "panel.delete_confirm": "¿Eliminar \"%1\"?",
+  "panel.yes": "Sí",
+  "panel.no": "No",
+  "panel.open_omado": "Abrir OmaDo"
+}

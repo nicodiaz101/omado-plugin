@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "omado.panel",
   "name": "OmaDo Tasks",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "author": "Nicolas Diaz",
   "license": "GPL-3.0-or-later",
-  "description": "OmaDo My Day tasks in the Omarchy top bar.",
+  "description": "OmaDo My Day tasks and quick add in the Omarchy top bar.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"

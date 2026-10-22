@@ -2,10 +2,10 @@
 
 > Official bar-widget plugin for the **Omarchy** desktop shell, integrating seamlessly with the **OmaDo** task daemon via D-Bus.
 
-Displays your daily tasks ("My Day") directly in your top status bar with instant reactive updates, inline completion, reminder badges, and fast access to OmaDo.
+Displays your daily tasks ("My Day") directly in your top status bar with instant reactive updates, quick task creation with natural language support, overdue task management, inline completion, reminder badges, and fast access to OmaDo.
 
 > [!IMPORTANT]
-> **This plugin is a companion bar-widget and REQUIRES [OmaDo](https://github.com/nicodiaz101/omado) to be installed and running.**  
+> **This plugin is a companion bar-widget and REQUIRES [OmaDo](https://github.com/nicodiaz101/omado) (v2.0+) to be installed and running.**  
 > It acts as a thin client over D-Bus. It does not store tasks or perform cloud sync on its own; all task data, SQLite storage, and Microsoft To Do synchronization are managed by the OmaDo background service.
 
 ---
@@ -14,8 +14,16 @@ Displays your daily tasks ("My Day") directly in your top status bar with instan
 
 - **Native Thin Client**: 100% pure QML and JavaScript. Zero external compilation required.
 - **Reactive D-Bus Integration**: Consumes the `io.omarchy.OmaDo` session bus service. Automatically syncs on `TodayTasksChanged` and `TasksChanged` signals.
+- **Quick Task Creation (Natural Language)**:
+  - Add tasks directly from the bar panel by typing in natural language (e.g. *"Buy milk tomorrow at 5pm"*, *"Revisar informe hoy a las 3pm"*).
+  - Press `Enter` to schedule and add directly to My Day.
+- **Overdue Task Awareness**:
+  - Automatically identifies pending tasks from previous days.
+  - 1-click **"+ My Day"** (*"+ Mi Día"*) action to immediately reschedule overdue tasks into today's list.
+- **Multilingual & System Integration**:
+  - Follows Omarchy's system language live via native `Commons.Translations` (English, Spanish, etc.).
 - **Omarchy Quattro Visual Language**:
-  - Uses native Omarchy components (`PopupCard`, `PanelHero`, `PanelSectionHeader`).
+  - Uses native Omarchy components (`PopupCard`, `PanelHero`, `PanelSectionHeader`, `TextField`).
   - Follows dynamic system theming (`Theme.*`) and typography.
   - Minimalist circular checkboxes (`radius: width / 2`) and clean Unicode iconography.
 - **Task Management in the Bar**:
@@ -30,8 +38,8 @@ Displays your daily tasks ("My Day") directly in your top status bar with instan
 ## Requirements
 
 1. **Omarchy**
-2. **[OmaDo](https://github.com/nicodiaz101/omado) (v1.1+)**: The core application and daemon must be installed.
-   - The OmaDo background daemon must be active so the plugin can communicate over D-Bus. If for some reason the installer of OmaDo do not add the autostart, you can add it by yourself:
+2. **[OmaDo](https://github.com/nicodiaz101/omado) (v2.0+)**: The core application and daemon must be installed.
+   - The OmaDo background daemon must be active so the plugin can communicate over D-Bus. If for some reason the installer of OmaDo did not add the autostart, you can add it manually:
      ```bash
      # Enable and start the OmaDo daemon user service
      systemctl --user enable --now omado.service
@@ -90,7 +98,7 @@ If you are developing or testing local changes:
 
 1. Clone or copy into the user plugins directory:
    ```bash
-   git clone https://github.com/nicodiaz101/omado-plugin.git ~/.config/omarchy/plugins/omado.panel
+   git clone -b 2.0 https://github.com/nicodiaz101/omado-plugin.git ~/.config/omarchy/plugins/omado.panel
    ```
 
 2. Validate the plugin manifest:
@@ -112,11 +120,15 @@ Any edits saved in `~/.config/omarchy/plugins/omado.panel/` are hot-reloaded aut
 
 ```text
 omado-plugin/
-├── manifest.json       # Omarchy Quattro plugin contract (ID: omado.panel)
+├── manifest.json       # Omarchy Quattro plugin contract (ID: omado.panel, version 2.0.0)
 ├── BarWidget.qml       # Top bar widget (counter badge, click-toggle, D-Bus listeners)
-├── Panel.qml           # Floating popup card (task list, reminder pill, inline delete)
+├── Panel.qml           # Floating popup card (NLP quick add, overdue tasks, task list, inline delete)
 ├── Model.js            # State store, D-Bus method invocations, countdown & filters
 ├── Theme.qml           # Palette fallback mapping
+├── i18n/               # Flat JSON translation catalogs
+│   ├── en.json         # English catalog
+│   ├── es.json         # Spanish base catalog
+│   └── es-MX.json      # Spanish (Mexico/Latin America) catalog
 ├── README.md           # User & installation documentation
 ├── SPECS.md            # Technical specifications
 ├── AGENTS.md           # AI Agent guidelines and rules
