@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
@@ -104,11 +105,13 @@ Panel {
           // Quick Task Creation (Natural Language)
           Row {
               width: parent.width
+              height: 32
               spacing: 6
 
               TextField {
                   id: newTaskInput
                   width: parent.width - 34
+                  height: 32
                   placeholderText: strings.t("panel.add_task_placeholder", "Add a task for today...")
                   foreground: root.foregroundColor
                   font.family: root.fontFamily
@@ -126,7 +129,7 @@ Panel {
               Rectangle {
                   id: addBtn
                   width: 28
-                  height: newTaskInput.height
+                  height: 32
                   radius: Style.cornerRadius
                   color: addMouse.containsMouse ? theme.accent : Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.15)
                   border.color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.4)
