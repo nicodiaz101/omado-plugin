@@ -71,14 +71,16 @@ Panel {
       }
   }
 
-  PopupCard {
+  KeyboardPanel {
       id: popup
       anchorItem: root.anchorItem
-      owner: root
+      owner: root.hostWidget || root
       bar: root.bar
       open: root.opened
+      centerOnBar: false
+      focusTarget: newTaskInput
       
-      contentWidth: popup.fittedContentWidth(340)
+      contentWidth: popup.fittedContentWidth(Style.space(340))
       contentHeight: popup.fittedContentHeight(mainColumn.implicitHeight)
 
       Column {
@@ -120,9 +122,14 @@ Panel {
                   selectByMouse: true
 
                   onAccepted: root.submitNewTask()
-                  Keys.onEscapePressed: {
-                      if (text.length > 0) text = ""
-                      else root.close()
+                  Keys.onEscapePressed: function(event) {
+                      if (text.length > 0) {
+                          text = "";
+                          event.accepted = true;
+                      } else {
+                          root.close();
+                          event.accepted = true;
+                      }
                   }
               }
 

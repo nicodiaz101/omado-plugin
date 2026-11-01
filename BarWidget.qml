@@ -97,6 +97,27 @@ BarWidget {
       }
   }
 
+  readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
+
+  function closeForPopoutSwitch() {
+    if (panelLoader.item) panelLoader.item.closeForPopoutSwitch()
+  }
+
+  function open() {
+    if (panelLoader.item) panelLoader.item.open()
+  }
+
+  function close() {
+    if (panelLoader.item) panelLoader.item.close()
+  }
+
+  function toggle() {
+    if (panelLoader.item) panelLoader.item.toggle()
+  }
+
+  readonly property real openPanelIndicatorWidth: button.labelWidth
+  readonly property real openPanelIndicatorHeight: Math.max(Style.space(10), Math.round(Style.bar.iconSlot * 0.55))
+
   onOpenedChanged: {
       if (opened) {
           root.refreshTasks();
@@ -122,6 +143,9 @@ BarWidget {
       target.tasks = Model.getVisibleTasks()
       target.overdueTasks = Model.overdueTasks
   }
+
+  onBarChanged: injectPanel()
+  onSettingsChanged: injectPanel()
 
   Loader {
     id: panelLoader
