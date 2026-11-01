@@ -23,6 +23,17 @@ BarWidget {
       directory: Qt.resolvedUrl("i18n")
   }
 
+  Component {
+      id: dbusCallProcessComp
+      Process {
+          stdout: StdioCollector { waitForEnd: true }
+      }
+  }
+
+  function createDBusProcess() {
+      return dbusCallProcessComp.createObject(root);
+  }
+
   function updateState() {
       daemonAvailable = Model.daemonAvailable;
       pendingCount = Model.pendingCount;
@@ -33,21 +44,29 @@ BarWidget {
   }
 
   function refreshTasks() {
-      dbusProcTasks.running = true;
-      dbusProcOverdue.running = true;
+      if (!dbusProcTasks.running) {
+          dbusProcTasks.running = true;
+      }
+      if (!dbusProcOverdue.running) {
+          dbusProcOverdue.running = true;
+      }
   }
 
   Component.onCompleted: {
-      Model.init(root);
+      Model.registerHost(root);
       root.refreshTasks();
       dbusMonitor.running = true;
+  }
+
+  Component.onDestruction: {
+      Model.unregisterHost(root);
   }
 
   Process {
       id: dbusProcTasks
       command: ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "GetTasksForToday"]
       stdout: StdioCollector { id: tasksStdout; waitForEnd: true }
-      onExited: function(exitCode) {
+      onExited: function(exitCode, exitStatus) {
           if (exitCode === 0) {
               try {
                   var res = JSON.parse(tasksStdout.text);
@@ -70,7 +89,7 @@ BarWidget {
       id: dbusProcOverdue
       command: ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "GetOverdueTasks"]
       stdout: StdioCollector { id: overdueStdout; waitForEnd: true }
-      onExited: function(exitCode) {
+      onExited: function(exitCode, exitStatus) {
           if (exitCode === 0) {
               try {
                   var res = JSON.parse(overdueStdout.text);
@@ -95,6 +114,16 @@ BarWidget {
               }
           }
       }
+      onExited: function(exitCode, exitStatus) {
+          monitorRestartTimer.restart();
+      }
+  }
+
+  Timer {
+      id: monitorRestartTimer
+      interval: 2000
+      repeat: false
+      onTriggered: dbusMonitor.running = true
   }
 
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
@@ -124,13 +153,13 @@ BarWidget {
       }
   }
 
+  // Polling de reintento: cada 30 segundos solo cuando el daemon no está disponible (AGENTS.md Regla 7)
   Timer {
-      interval: 3000
-      running: true
+      id: retryDaemonTimer
+      interval: 30000
+      running: !root.daemonAvailable
       repeat: true
-      onTriggered: {
-          root.refreshTasks();
-      }
+      onTriggered: root.refreshTasks()
   }
   
   function injectPanel() {
@@ -170,7 +199,6 @@ BarWidget {
     
     onPressed: function(mouse) {
         if (panelLoader.item) {
-            root.refreshTasks();
             panelLoader.item.toggle();
         }
     }

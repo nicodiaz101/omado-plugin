@@ -1,27 +1,90 @@
 .pragma library
 
-var host = null;
+var hosts = [];
 var daemonAvailable = false;
 var pendingCount = 0;
 var todayTasks = [];
 var overdueTasks = [];
-var recentlyCompleted = {};
+var recentlyCompleted = {}; // taskId -> { timestamp: Number, secondsLeft: Number }
 
-function init(barWidget) {
-    host = barWidget;
+function registerHost(host) {
+    if (host && hosts.indexOf(host) === -1) {
+        hosts.push(host);
+    }
 }
 
-function toggleTask(taskId, currentCompleted) {
+function unregisterHost(host) {
+    var idx = hosts.indexOf(host);
+    if (idx !== -1) {
+        hosts.splice(idx, 1);
+    }
+}
+
+function init(barWidget) {
+    registerHost(barWidget);
+}
+
+function notifyHosts(methodName) {
+    for (var i = 0; i < hosts.length; i++) {
+        var h = hosts[i];
+        if (h && typeof h[methodName] === "function") {
+            try {
+                h[methodName]();
+            } catch (e) {
+                console.warn("[omado.panel] notifyHosts error on " + methodName + ":", e);
+            }
+        }
+    }
+}
+
+function createProcess() {
+    for (var i = 0; i < hosts.length; i++) {
+        var h = hosts[i];
+        if (h && typeof h.createDBusProcess === "function") {
+            var p = h.createDBusProcess();
+            if (p) return p;
+        }
+    }
+    var parentHost = (hosts.length > 0) ? hosts[0] : null;
+    return Qt.createQmlObject('import Quickshell.Io; Process { stdout: StdioCollector { waitForEnd: true } }', parentHost);
+}
+
+function runDBusCall(args, callback) {
+    var proc = createProcess();
+    if (!proc) {
+        if (callback) callback(false, null);
+        return;
+    }
+    proc.command = ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo"].concat(args);
+    proc.onExited = function(exitCode, exitStatus) {
+        var success = (exitCode === 0);
+        var resultData = null;
+        if (success && proc.stdout && proc.stdout.text) {
+            try {
+                var res = JSON.parse(proc.stdout.text);
+                if (res && res.data && res.data.length > 0) {
+                    resultData = res.data[0];
+                }
+            } catch(e) {
+                console.warn("[omado.panel] Failed to parse D-Bus output:", e);
+                success = false;
+            }
+        } else if (exitCode !== 0) {
+            success = false;
+        }
+        if (callback) {
+            callback(success, resultData);
+        }
+        proc.destroy();
+    };
+    proc.running = true;
+}
+
+function toggleTask(taskId, currentCompleted, callback) {
     var newState = !currentCompleted;
     var bStr = newState ? "true" : "false";
-    
-    var proc = Qt.createQmlObject('import QtQuick; import Quickshell.Io; Process { }', host, "dbusProcToggle");
-    proc.command = ["busctl", "--user", "call", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "ToggleTask", "sb", taskId, bStr];
-    proc.exited.connect(function() {
-        proc.destroy();
-    });
-    proc.running = true;
 
+    // Optimistic local update
     if (newState === true) {
         recentlyCompleted[taskId] = { timestamp: Date.now(), secondsLeft: 10 };
     } else {
@@ -36,7 +99,17 @@ function toggleTask(taskId, currentCompleted) {
         }
     }
     pendingCount = getPendingTodayCount();
-    if (host) host.updateState();
+    notifyHosts("updateState");
+
+    runDBusCall(["ToggleTask", "sb", taskId, bStr], function(success, result) {
+        if (!success || result !== true) {
+            // Revert state if daemon rejected or failed (Regla 8)
+            notifyHosts("refreshTasks");
+            if (callback) callback(false);
+            return;
+        }
+        if (callback) callback(true);
+    });
 }
 
 function getPendingTodayCount() {
@@ -60,79 +133,87 @@ function getVisibleTasks() {
     return visible;
 }
 
+function updateRecentlyCompleted() {
+    var now = Date.now();
+    var hasExpired = false;
+    for (var taskId in recentlyCompleted) {
+        if (!recentlyCompleted.hasOwnProperty(taskId)) continue;
+        var entry = recentlyCompleted[taskId];
+        var elapsed = now - entry.timestamp;
+        var left = Math.max(0, Math.ceil((10000 - elapsed) / 1000));
+        entry.secondsLeft = left;
+        if (left <= 0) {
+            delete recentlyCompleted[taskId];
+            hasExpired = true;
+        }
+    }
+    return hasExpired;
+}
+
+function hasRecentlyCompletedTasks() {
+    for (var k in recentlyCompleted) {
+        if (recentlyCompleted.hasOwnProperty(k)) return true;
+    }
+    return false;
+}
+
+function getSecondsLeft(taskId) {
+    if (!recentlyCompleted.hasOwnProperty(taskId)) return 0;
+    var elapsed = Date.now() - recentlyCompleted[taskId].timestamp;
+    return Math.max(0, Math.ceil((10000 - elapsed) / 1000));
+}
+
 function removeRecentlyCompleted(taskId) {
     if (recentlyCompleted.hasOwnProperty(taskId)) {
         delete recentlyCompleted[taskId];
-        if (host) host.updateState();
+        notifyHosts("updateState");
     }
 }
 
 function createTask(rawText, addToMyDay, callback) {
     if (!rawText || rawText.trim() === "") return;
     var bStr = (addToMyDay !== false) ? "true" : "false";
-    var proc = Qt.createQmlObject('import QtQuick; import Quickshell.Io; Process { }', host, "dbusProcCreate");
-    proc.command = ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "CreateTaskFromNaturalText", "sb", rawText.trim(), bStr];
 
-    var collector = Qt.createQmlObject('import Quickshell.Io; StdioCollector { waitForEnd: true }', proc, "dbusProcCreateCollector");
-    proc.stdout = collector;
-
-    proc.exited.connect(function() {
-        var success = (proc.exitCode === 0);
-        var taskId = "";
-        if (success) {
-            try {
-                var res = JSON.parse(collector.text);
-                taskId = res.data[0];
-            } catch(e) {}
-            if (host && host.refreshTasks) {
-                host.refreshTasks();
-            }
+    runDBusCall(["CreateTaskFromNaturalText", "sb", rawText.trim(), bStr], function(success, result) {
+        var taskId = (success && typeof result === "string") ? result : "";
+        var ok = (success && taskId.length > 0);
+        if (ok) {
+            notifyHosts("refreshTasks");
         }
-        if (callback) callback(success, taskId);
-        proc.destroy();
+        if (callback) callback(ok, taskId);
     });
-    proc.running = true;
 }
 
 function rescheduleTask(taskId, callback) {
     if (!taskId) return;
-    var proc = Qt.createQmlObject('import QtQuick; import Quickshell.Io; Process { }', host, "dbusProcReschedule");
-    proc.command = ["busctl", "--user", "call", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "RescheduleTaskForMyDay", "s", taskId];
-    proc.exited.connect(function() {
-        var success = (proc.exitCode === 0);
-        if (success) {
+    runDBusCall(["RescheduleTaskForMyDay", "s", taskId], function(success, result) {
+        var ok = (success && result === true);
+        if (ok) {
             overdueTasks = overdueTasks.filter(function(t) { return t.id !== taskId; });
-            if (host && host.refreshTasks) {
-                host.refreshTasks();
-            } else if (host) {
-                host.updateState();
-            }
+            notifyHosts("refreshTasks");
         }
-        if (callback) callback(success);
-        proc.destroy();
+        if (callback) callback(ok);
     });
-    proc.running = true;
 }
 
 function deleteTask(taskId, callback) {
-    var proc = Qt.createQmlObject('import QtQuick; import Quickshell.Io; Process { }', host, "dbusProcDelete");
-    proc.command = ["busctl", "--user", "call", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo", "DeleteTask", "s", taskId];
-    proc.exited.connect(function() {
-        if (proc.exitCode === 0) {
+    if (!taskId) return;
+    runDBusCall(["DeleteTask", "s", taskId], function(success, result) {
+        var ok = (success && result === true);
+        if (ok) {
             todayTasks = todayTasks.filter(function(t) { return t.id !== taskId; });
             overdueTasks = overdueTasks.filter(function(t) { return t.id !== taskId; });
             if (recentlyCompleted.hasOwnProperty(taskId)) {
                 delete recentlyCompleted[taskId];
             }
             pendingCount = getPendingTodayCount();
+            notifyHosts("refreshTasks");
             if (callback) callback(true);
         } else {
+            notifyHosts("refreshTasks");
             if (callback) callback(false);
         }
-        if (host) host.updateState();
-        proc.destroy();
     });
-    proc.running = true;
 }
 
 function getReminderTime(reminderAt) {
@@ -152,7 +233,13 @@ function getFormattedDueDate(dueDate) {
     var datePart = dueDate.split(/[T ]/)[0];
     var parts = datePart.split("-");
     if (parts.length === 3) {
-        return parts[1] + "/" + parts[2];
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10);
+        var d = parseInt(parts[2], 10);
+        var dateObj = new Date(y, m - 1, d);
+        if (!isNaN(dateObj.getTime())) {
+            return dateObj.toLocaleDateString(Qt.locale().name, { day: "numeric", month: "numeric" });
+        }
     }
     return datePart;
 }
