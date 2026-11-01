@@ -109,7 +109,7 @@ BarWidget {
       stdout: SplitParser {
           onRead: function(data) {
               var line = String(data);
-              if (line.indexOf("TodayTasksChanged") !== -1 || line.indexOf("TasksChanged") !== -1) {
+              if (line.indexOf("Member=TodayTasksChanged") !== -1 || line.indexOf("Member=TasksChanged") !== -1) {
                   root.refreshTasks();
               }
           }

@@ -45,8 +45,7 @@ function createProcess() {
             if (p) return p;
         }
     }
-    var parentHost = (hosts.length > 0) ? hosts[0] : null;
-    return Qt.createQmlObject('import Quickshell.Io; Process { stdout: StdioCollector { waitForEnd: true } }', parentHost);
+    return null;
 }
 
 function runDBusCall(args, callback) {
@@ -55,7 +54,12 @@ function runDBusCall(args, callback) {
         if (callback) callback(false, null);
         return;
     }
-    proc.command = ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo"].concat(args);
+    var baseCmd = ["busctl", "--user", "call", "--json=short", "io.omarchy.OmaDo", "/io/omarchy/OmaDo", "io.omarchy.OmaDo"];
+    if (args && args.length >= 2) {
+        proc.command = baseCmd.concat([args[0], args[1], "--"]).concat(args.slice(2));
+    } else {
+        proc.command = baseCmd.concat(args || []);
+    }
     proc.onExited = function(exitCode, exitStatus) {
         var success = (exitCode === 0);
         var resultData = null;

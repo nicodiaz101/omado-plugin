@@ -227,6 +227,7 @@ Panel {
                           Text {
                               width: parent.width
                               text: overdueItem.modelData.title !== undefined ? overdueItem.modelData.title : ""
+                              textFormat: Text.PlainText
                               color: root.foregroundColor
                               font.pixelSize: Style.font.body
                               font.family: root.fontFamily
@@ -475,6 +476,7 @@ Panel {
                           Text {
                               width: parent.width
                               text: taskItem.modelData.title !== undefined ? taskItem.modelData.title : ""
+                              textFormat: Text.PlainText
                               color: taskItem.modelData.isCompleted ? theme.border : root.foregroundColor
                               font.strikeout: taskItem.modelData.isCompleted
                               font.pixelSize: Style.font.subtitle
@@ -571,6 +573,7 @@ Panel {
                           anchors.rightMargin: 8
                           anchors.verticalCenter: parent.verticalCenter
                           text: strings.t("panel.delete_confirm", "Delete \"%1\"?").arg(taskItem.modelData.title || "")
+                          textFormat: Text.PlainText
                           color: theme.error
                           font.pixelSize: Style.font.body
                           font.family: root.fontFamily
