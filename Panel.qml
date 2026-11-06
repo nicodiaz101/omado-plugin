@@ -36,10 +36,15 @@ Panel {
   readonly property color foregroundColor: bar ? bar.foreground : theme.foreground
   readonly property string fontFamily: bar ? bar.fontFamily : "sans-serif"
 
+  property bool isSubmitting: false
+
   function submitNewTask() {
+      if (root.isSubmitting) return;
       var txt = newTaskInput.text.trim();
       if (txt.length === 0) return;
+      root.isSubmitting = true;
       Model.createTask(txt, true, function(success, taskId) {
+          root.isSubmitting = false;
           if (success) {
               newTaskInput.text = "";
           }

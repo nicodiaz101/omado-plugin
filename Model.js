@@ -60,7 +60,7 @@ function runDBusCall(args, callback) {
     } else {
         proc.command = baseCmd.concat(args || []);
     }
-    proc.onExited = function(exitCode, exitStatus) {
+    proc.exited.connect(function(exitCode, exitStatus) {
         var success = (exitCode === 0);
         var resultData = null;
         if (success && proc.stdout && proc.stdout.text) {
@@ -75,12 +75,14 @@ function runDBusCall(args, callback) {
             }
         } else if (exitCode !== 0) {
             success = false;
+            var err = (proc.stderr && proc.stderr.text) ? proc.stderr.text.trim() : ("exit code " + exitCode);
+            console.warn("[omado.panel] D-Bus call failed:", err);
         }
         if (callback) {
             callback(success, resultData);
         }
         proc.destroy();
-    };
+    });
     proc.running = true;
 }
 

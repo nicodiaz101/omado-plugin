@@ -27,6 +27,7 @@ BarWidget {
       id: dbusCallProcessComp
       Process {
           stdout: StdioCollector { waitForEnd: true }
+          stderr: StdioCollector { waitForEnd: true }
       }
   }
 
